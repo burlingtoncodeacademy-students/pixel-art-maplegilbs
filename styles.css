@@ -1,11 +1,327 @@
+@font-face {
+  font-family: 'Crayon';
+  src: url('BoldCrayola-Regular.ttf')
+}
+*{
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-evenly;
   height: 100vh;
 }
-/*------Grid Container---------*/
+
+/*Initial Instructions and Inputs Prompt, Saved Games List*/
+#instructions-prompt-container, #saved-games-list-container {
+  position: absolute;
+  z-index: 99;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+}
+#saved-games-list-container {
+  display: none;
+}
+#instructions-prompt, #saved-games {
+  background: linear-gradient(rgba(200,176,25, .5), rgba(38, 155, 155, .5));
+  border: 2px solid cornflowerblue;
+  border-radius: 5px;
+  width: max-content;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+}
+#instructions-prompt section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 95%;
+  align-items: center;
+  padding: 15px;
+  text-align: center;
+}
+#instructions-prompt h2 {
+  text-align: center;
+  text-transform: uppercase;
+}
+#instructions-prompt section>* {
+  margin: 5px auto;
+}
+
+/*Saved Games List*/
+#saved-games-list-container {
+  position: relative;
+}
+#saved-games-list{
+  list-style: none;
+  margin: 5px auto;
+  background: white;
+  width: 75%;
+}
+#saved-games-list li {
+  text-align: center;
+  cursor: pointer;
+  margin: 3px auto;
+  padding: 5px 15px;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+button.close-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 1.2em;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: none;
+  background-color: transparent;
+}
+
+/*Main Sections*/
+main {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  justify-content: space-evenly;
+  width: 100%;
+  height: 100%;
+}
+main section.game-board-and-buttons{
+  margin: 0 1vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  max-height: 98vh;
+  max-width: 98vh;
+}
+main section.game-board-and-buttons>section{
+margin: 10px auto;;
+}
+main section.game-board {
+  display: grid;
+  height: 64vw;
+  width: 64vw;
+  max-height: 95vh;
+  max-width: 95vh;
+  gap: 0;
+}
+main section.options {
+  position: relative;
+  /* flex-basis: 40vw; */
+  flex-grow: 1;
+  margin: 0 1vw;
+  height: 98%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  background-color: rgba(245, 245, 245, .25);
+  border-radius: 10px;
+  /* border: 1px solid black; */
+}
+
+
+/*Grid Cells*/
+.grid-cell {
+  min-height: 1px;
+  min-width: 1px;
+  background-color: lightgrey;
+  border: 1px solid #555;
+}
+
+/*Control Buttons*/
+.controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+  width: max-content;
+  height: 100%;
+  padding-top: 15%;
+  padding-right: 10px;
+}
+.controls button {
+  text-transform: uppercase;
+  color: white;
+  font-family: 'Roboto';
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 5px;
+  background: linear-gradient(45deg, rgba(77, 88, 210, .7), rgba(220,220,220, .7));
+  width: 100%;
+  margin: 5px 1%;
+}
+.disabled {
+  background: linear-gradient(45deg, rgba(77, 88, 210, .2), rgba(220,220,220, .2)) !important;
+}
+
+
+
+/*Color selector crayons*/
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.color-picker h2 {
+  font-family: 'Crayon';
+  text-transform: uppercase;
+  font-size: 1.5em;
+  position: absolute;
+  top: 25px;
+}
+#color-name {
+  font-family: 'Crayon';
+  text-transform: uppercase;
+  font-size: 25px;
+  min-height: 25px;
+  text-align: center;
+}
+.crayon-box-container {
+  width: max-content;
+}
+.crayon-row{
+  padding: 4px;
+}
+.crayon-container {
+  display: inline-block;
+  width: 3.5vh; 
+  height: 25vh; 
+  transition: all 1s ease;
+}
+.crayon-container:hover {
+  transform: translateY(-15px);
+  cursor: pointer;
+}
+.crayon-point{
+  margin: 0 auto;
+  width: 95%;
+  height: 21%;
+  background: conic-gradient(transparent 0deg, transparent 145deg, red 145deg, rgba(200,0,0) 215deg, transparent 215deg, transparent 360deg);
+  border-radius: 0 0 5% 5%;
+}
+.crayon-body {
+  width: 100%;
+  height: 70%;
+  border-top: .4em solid rgb(31, 31, 31);
+  border-bottom: .4em solid rgb(31,31,31);
+  background-color: red;
+}
+.crayon-logo-container {
+  height: 80%;
+  width: 75%;
+  background-color: black;
+  margin: 40% auto;
+  border-radius: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crayon-logo {
+  font-family: 'Crayon';
+  transform: rotateZ(90deg);
+  color: white;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+.crayon-bottom{
+  width: 100%;
+  height: 9%;
+  border-radius: 0 0 20% 20%;
+  background-color: red
+}
+.crayon-box{
+  height: 250px;
+  background-color: #febe10;
+  background: linear-gradient(90deg, darkgreen 10%, white 10% 11%, #febe10 11% 89%, white 89% 90%, darkgreen 90%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 10px 8px #777;
+  /* display: none; */
+}
+.crayon-box-logo {
+  font-family: 'Crayon';
+  font-size: 2.5em;
+  width: 75%;
+  height: 35%;
+  background-color: darkgreen;
+  border: 2px solid white;
+  border-radius: 85%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ------Grid Container---------
 .gridContainer {
   max-height: 50%;
   max-width: 50%;
@@ -24,7 +340,7 @@ body {
 }
 
 
-/*---------------Color Display------------*/
+
 .colorEditor{
     display: flex;
     flex-direction: column;
@@ -35,7 +351,7 @@ body {
     text-align: center;
 }
 
-/* color buttons  */
+
 #buttonDisplay{
     display: flex;
     flex-direction: row;
@@ -73,11 +389,11 @@ body {
   background-color: violet;
 }
 
-/* Other Buttons */
+
 #otherControls{
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     text-align: center;
 
-}
+} */
