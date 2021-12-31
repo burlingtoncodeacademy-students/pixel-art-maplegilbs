@@ -146,7 +146,7 @@ main section.options {
   padding-top: 15%;
   padding-right: 10px;
 }
-.controls button {
+.controls button, #instructions-prompt button {
   text-transform: uppercase;
   color: white;
   font-family: 'Roboto';
@@ -156,6 +156,11 @@ main section.options {
   background: linear-gradient(45deg, rgba(77, 88, 210, .7), rgba(220,220,220, .7));
   width: 100%;
   margin: 5px 1%;
+}
+#instructions-prompt button {
+  width: max-content;
+  padding: 3px 10px;
+  text-shadow: 2px 2px 3px black;
 }
 .disabled {
   background: linear-gradient(45deg, rgba(77, 88, 210, .2), rgba(220,220,220, .2)) !important;
@@ -183,6 +188,7 @@ main section.options {
   font-size: 25px;
   min-height: 25px;
   text-align: center;
+  width: 50%;
 }
 .crayon-box-container {
   width: max-content;

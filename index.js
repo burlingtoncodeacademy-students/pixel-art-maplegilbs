@@ -1,14 +1,4 @@
-// import { crayonColors } from "./crayoncolors";
-// const crayonColorFilePath = 'crayoncolors.json';
-// async function fetchData(fileLocation){
-//   let data = await fetch(fileLocation);
-//   console.log(data.ok)
-//   data = await data.json();
-//   return data;
-// }
-// fetchData(crayonColorFilePath);
-
-//setting global variables
+//Global variables
 const crayonColors = {
   "White": "#EEEEEE",
   "Black": "#000000",
@@ -189,21 +179,221 @@ const howGoodOpts = {
   48: 'very good, I recycled and said please and thank you.',
   60: 'a perfect angel'
 };
-let totalColorOpts = Object.keys(crayonColors).length;
-let defaultColor = '#d3d3d3';
+const totalColorOpts = Object.keys(crayonColors).length;
+const defaultColor = '#d3d3d3';
 let selectedColor = defaultColor;
 let numCrayons = null;
 let numGridCells = null;
 let currentCrayon;
 let clickHistory = [];
 let colorName = document.getElementById('color-name');
-
-//function to translate viewport height to px
 let vwPrtHtPx = window.innerHeight;
 let vwPrtWdPx = window.innerWidth;
+let clickCounter = 0;
+let savedGames = {};
 
 
-//function to translate RGB colors to hex colors for use
+
+//DOM elemet variables
+let gridOptions = document.getElementById('grid-options');
+let crayonOptions = document.getElementById('crayon-options');
+let startBtn = document.getElementById('start');
+let clearBoardBtn = document.getElementById('clear-board');
+let undoBtn = document.getElementById('undo');
+let newBoardBtn = document.getElementById('new-board');
+let clearCellBtn = document.getElementById('clear-cell');
+let shuffleBtn = document.getElementById('shuffle');
+let saveBtn = document.getElementById('save');
+let loadBtn = document.getElementById('load');
+
+
+
+
+/*Event Listeners*/
+crayonOptions.addEventListener('change', setColorOptions);
+gridOptions.addEventListener('change', setGridOptions);
+startBtn.addEventListener('click', startGame);
+clearBoardBtn.addEventListener('click', clearBoard);
+newBoardBtn.addEventListener('click', newBoard);
+clearCellBtn.addEventListener('click', clearCell);
+undoBtn.addEventListener('click', undo);
+shuffleBtn.addEventListener('click', shuffle); 
+saveBtn.addEventListener('click', saveGame);
+loadBtn.addEventListener('click', loadGame);
+
+
+
+
+/*Event Handlers*/
+function setGridOptions () {
+  numGridCells = parseInt(gridOptions.value);
+  document.getElementById('how-ambitious-label').textContent = howAmbitiousOpts[numGridCells]
+}
+
+ function setColorOptions() {
+  numCrayons = parseInt(crayonOptions.value);
+  document.getElementById('how-good-label').textContent = howGoodOpts[numCrayons]
+}
+
+function clearBoard () {
+  let confirmation = window.confirm('Are you sure?')
+  if (confirmation) {
+    let gridCells = document.querySelectorAll('.grid-cell');
+    let i = 0;
+    gridCells.forEach(element => {
+      setTimeout(() => element.style.backgroundColor = defaultColor, i * 2)
+      i++
+    })
+  }
+  undoReset();
+}
+
+  function newBoard () {
+  let gridSize = window.prompt('Grid size please (between 1 and 60)');
+  if (gridSize === null) { return }
+  gridSize = parseInt(gridSize);
+  while (isNaN(gridSize) || gridSize > 60 || gridSize < 1) {
+    gridSize = window.prompt('Please input a number between 1 and 60');
+    if (gridSize === null) { return }
+    gridSize = parseInt(gridSize);
+  }
+  undoReset();
+  buildGrid(gridSize)
+}
+
+function clearCell () {
+  if (currentCrayon !== undefined) {
+    currentCrayon.style.transform = '';
+    colorName.style.color = '#333333';
+    colorName.textContent = 'Using Eraser - Select A Color To Draw';
+    selectedColor = defaultColor;
+  }
+  else {
+    selectedColor = defaultColor;
+    colorName.textContent = 'Using Eraser - Select A Color To Draw'
+  }
+}
+
+function undo(event) {
+  let cellId = Object.keys(clickHistory[clickHistory.length - 1])[0];
+  let priorColor = clickHistory[clickHistory.length - 1][cellId];
+  document.getElementById(cellId).style.backgroundColor = priorColor;
+  clickHistory.pop();
+  if (clickHistory.length === 0) {
+    event.target.disabled = true; event.target.classList.add('disabled')
+  }
+}
+
+function shuffle () {
+  let confirmation = window.confirm('Are you sure?  This cannot be undone.')
+  if (confirmation) {
+    let gridCells = document.querySelectorAll('.grid-cell');
+    let gridCellColors = [];
+    let randomizedBgColorArray = []
+    for (let gridCell of gridCells) {
+      gridCellColors.push(gridCell.style.backgroundColor)
+    }
+    for (let i = gridCellColors.length; i > 0; i--) {
+      let index = Math.floor(Math.random() * i);
+      let color = gridCellColors.splice(index, 1);
+      randomizedBgColorArray.push(color);
+    }
+    for (let i = 0; i < randomizedBgColorArray.length; i++) {
+      gridCells[i].style.backgroundColor = randomizedBgColorArray[i]
+    }
+  }
+  undoReset()
+}
+
+function saveGame () {
+  let name = window.prompt('Please input a name')
+  let savedGameNames = Object.keys(savedGames);
+  while (savedGameNames.includes(name)) {
+    name = window.prompt('That name is already in use, Please input a name')
+  }
+  savedGames[name] = {};
+  let gridCells = document.querySelectorAll('.grid-cell');
+  for (let gridCell of gridCells) {
+    let cellID = gridCell.id;
+    let cellBgColor = gridCell.style.backgroundColor;
+    savedGames[name][cellID] = cellBgColor;
+  }
+  let savedGameListItem = document.createElement('li');
+  savedGameListItem.textContent = name;
+  savedGameListItem.id = name;
+  document.getElementById('saved-games-list').appendChild(savedGameListItem);
+  loadBtn.disabled = false;
+  loadBtn.classList.remove('disabled');
+}
+
+function loadGame () {
+  document.getElementById('saved-games-list-container').style.display = 'flex';
+  let savedGamesList = document.querySelectorAll('#saved-games-list li');
+  savedGamesList.forEach(savedGame => {
+    savedGame.addEventListener('click', () => {
+      let savedGameBoard = savedGames[savedGame.id];
+      let dimensions = Math.sqrt(Object.keys(savedGameBoard).length)
+      buildGrid(dimensions, savedGameBoard)
+      document.getElementById('saved-games-list-container').style.display = 'none';
+    })
+  })
+  undoReset()
+}
+
+function startGame () {
+  if (numCrayons === null || numGridCells === null) {
+    alert('Please indicate motivation and virtue levels.')
+  }
+  else {
+    document.getElementById('instructions-prompt-container').style.display = 'none';
+    buildGrid(numGridCells);
+    buildCrayonBox(numCrayons, 12);
+    //for each crayon element add an event listener that will listen for the click event
+    //on click it will move the crayon to be highlighted above the box of crayons and identified as the selected color
+    //the previously selected crayon / color will return to its original position  
+    let previousCrayon = null;
+    let crayonContainers = document.querySelectorAll('.crayon-container');
+    crayonContainers.forEach((crayonContainer) => {
+      crayonContainer.addEventListener('click', () => {
+        currentCrayon = crayonContainer;
+        selectedColor = currentCrayon.style.borderColor;
+        let curRow = currentCrayon.parentElement;
+        let allRows = curRow.parentNode.children;
+        let allRowsArray = Array.from(allRows);
+        let curRowNum = allRowsArray.indexOf(curRow) + 1;
+        if (previousCrayon == null) {
+          previousCrayon = currentCrayon;
+        }
+        previousCrayon.style.transform = "";
+        let width = currentCrayon.clientWidth;
+        let height = currentCrayon.clientHeight;
+        let crayonsInRow = Array.from(curRow.children).length;
+        let middleOfRow = crayonsInRow * width / 2;
+        let positionInRow = (Array.from(curRow.children).indexOf(currentCrayon) + 1) * width;
+        let xTranslation = middleOfRow - positionInRow + width / 2 - (height * .2 * .5) / 2; //move the difference from between the middle of the row and current position in the row, plus half the width of the crayon container, minus half the 'invisible' part of the point (which is itself half the point div - so 1/4 the point div)
+        currentCrayon.style.transform = 'translateY(-' + (20 + height / 2 + .05 * vwPrtHtPx * curRowNum + 8 * curRowNum) + 'px) translateX(' + (xTranslation) + 'px) rotateZ(-90deg)';
+        currentCrayon.style.margin
+        previousCrayon = currentCrayon;
+        for (let colorId in crayonColors) {
+          let selectedColorArray = selectedColor.substring(4, selectedColor.length - 1).split(',')
+          let selectedColorFormatted = RGBToHex(selectedColorArray[0], selectedColorArray[1], selectedColorArray[2]);
+          if (crayonColors[colorId] === selectedColorFormatted) {
+            colorName.textContent = colorId;
+            colorName.style.color = selectedColor;
+            colorName.style.textShadow = '3px 3px 5px #000, -1px 1px 1px #444, 1px -1px 1px #444,-1px -1px 1px #444';
+          }
+        }
+      })
+    })
+  }
+}
+
+
+
+
+
+/*Utility Functions*/
+//input rgb value translate to hex color string
 function RGBToHex(r, g, b) {
   r = parseInt(r).toString(16).toUpperCase();
   g = parseInt(g).toString(16).toUpperCase();
@@ -216,8 +406,42 @@ function RGBToHex(r, g, b) {
     b = "0" + b;
   return "#" + r + g + b;
 }
+//clear the game history array and disalbe the undo button
+function undoReset() {
+  clickHistory = [];
+  undoBtn.disabled = true;
+  undoBtn.classList.add('disabled');
+}
+//function to return a color.  take the total color options available and divide by the number of crayons, call this number n.  given a count select the n * count color from the color options
+//this will be the crayon color.  the count will increment for every crayon being populated
+//ex you have 20 color options and you want 5 crayons, n will = 4 (20/5), and the colors will be those found at the the 0 index, 4 index, 8 index, 12 index and 16 index color (4*0, 4*1,4*2,4*3,4*4)
+//the first two colors will always be white and black
+function getColor(totalColors, count) {
+  let bgColor = '';
+  let colors = Object.keys(crayonColors);
+  if (count === 0) {
+    bgColor = crayonColors[colors[0]]
+  }
+  else if (count === 1) {
+    bgColor = crayonColors[colors[1]]
+  }
+  else {
+    let colorIndex = Math.floor(totalColorOpts / totalColors) * count;
+    let color = colors[colorIndex]
+    bgColor = crayonColors[color]
+  }
+  return bgColor;
+}
+//close load screen
+document.querySelector('button.close-button').addEventListener('click', () => {
+  document.getElementById('saved-games-list-container').style.display = 'none';
+})
 
-//given dimensions build a grid to the game-board.  if the function is being called by the user loading a saved game, it will accept a savedGame arguement
+
+
+/*Primary Functions*/
+//Build grid elements
+//given dimensions build a grid to the game-board.  if the function is being called by the user loading a saved game, it will accept a savedGame argument
 //the saved game argument will be an object containing key value pairs of the cell Id and the corresponding backgroundColor;
 function buildGrid(dimension = 12, savedGame = false) {
   let gameBoard = document.querySelector('.game-board');
@@ -253,8 +477,7 @@ function buildGrid(dimension = 12, savedGame = false) {
   }
 }
 
-
-//given a selection build a box of crayons
+//Build crayon box (color selector) elements
 function buildCrayonBox(totalCrayons = 0, crayonsPerRow) {
   let crayonBoxContainer = document.querySelector('.crayon-box-container');
   let crayonFragment = document.createDocumentFragment();
@@ -317,241 +540,13 @@ function buildCrayonBox(totalCrayons = 0, crayonsPerRow) {
     let crayonBox = document.createElement('div');
     crayonBox.classList.add('crayon-box');
     crayonBox.style.width = `${crayonsPerRow * 3.6}vh`;
-    // crayonBox.style.width = `${crayonsPerRow * 30 + 10}px`;
-    crayonBox.style.transform = `translateY(-${i * 19 -1}vh) `;
-    // crayonBox.style.transform = `translateY(-${i * 175 - 25}px) `;
+    crayonBox.style.transform = `translateY(-${i * 19 - 1}vh) `;
     let crayonBoxLogo = document.createElement('div');
     crayonBoxLogo.classList.add('crayon-box-logo');
     crayonBoxLogo.textContent = 'CRAYON';
     crayonBox.appendChild(crayonBoxLogo);
     crayonFragment.appendChild(crayonBox);
     crayonBoxContainer.appendChild(crayonFragment);
-    // crayonBoxContainer.style.height = `${i * 50 + 250 + 25}px`
-    crayonBoxContainer.style.height = `${i * 7 + 25+ 1}vh`
+    crayonBoxContainer.style.height = `${i * 7 + 25 + 1}vh`
   }
 }
-
-//function to return a color.  take the total color options available and divide by the number of crayons, call this number n.  given a count select the n * count color from the color options
-//this will be the crayon color.  the count will increment for every crayon being populated
-//ex you have 20 color options and you want 5 crayons, n will = 4 (20/5), and the colors will be those found at the the 0 index, 4 index, 8 index, 12 index and 16 index color (4*0, 4*1,4*2,4*3,4*4)
-//the first two colors will always be white and black
-function getColor(totalColors, count) {
-  let bgColor = '';
-  let colors = Object.keys(crayonColors);
-  if (count === 0) {
-    bgColor = crayonColors[colors[0]]
-  }
-  else if (count === 1) {
-    bgColor = crayonColors[colors[1]]
-  }
-  else {
-    let colorIndex = Math.floor(totalColorOpts / totalColors) * count;
-    let color = colors[colorIndex]
-    bgColor = crayonColors[color]
-  }
-  return bgColor;
-}
-
-
-
-
-/* ----Event listeners for control buttons----*/
-
-//range input to deteremine grid dimensions
-let gridOptions = document.getElementById('grid-options');
-gridOptions.addEventListener('change', () => {
-  numGridCells = parseInt(gridOptions.value);
-  document.getElementById('how-ambitious-label').textContent = howAmbitiousOpts[numGridCells]
-})
-
-//range input to deteremine amount of crayon options you have to choose from
-let crayonOptions = document.getElementById('crayon-options');
-crayonOptions.addEventListener('change', () => {
-  numCrayons = parseInt(crayonOptions.value);
-  document.getElementById('how-good-label').textContent = howGoodOpts[numCrayons]
-})
-
-//start button event listener
-let startBtn = document.getElementById('start');
-startBtn.addEventListener('click', () => {
-  if (numCrayons === null || numGridCells === null) {
-    alert('Please select a laziness and goodness level.')
-  }
-  else {
-    document.getElementById('instructions-prompt-container').style.display = 'none';
-    buildGrid(numGridCells);
-    buildCrayonBox(numCrayons, 12);
-    //for each crayon element add an event listener that will listen for the click event
-    //on click it will move the crayon to be highlighted above the box of crayons and identified as the selected color
-    //the previously selected crayon / color will return to its original position  
-    let previousCrayon = null;
-    let crayonContainers = document.querySelectorAll('.crayon-container');
-    crayonContainers.forEach((crayonContainer) => {
-      crayonContainer.addEventListener('click', () => {
-        currentCrayon = crayonContainer;
-        selectedColor = currentCrayon.style.borderColor;
-        let curRow = currentCrayon.parentElement;
-        let allRows = curRow.parentNode.children;
-        let allRowsArray = Array.from(allRows);
-        let curRowNum = allRowsArray.indexOf(curRow)+1;
-        if (previousCrayon == null) {
-          previousCrayon = currentCrayon;
-        }
-        previousCrayon.style.transform = "";
-        let width = currentCrayon.clientWidth;
-        let height = currentCrayon.clientHeight;
-        let crayonsInRow = Array.from(curRow.children).length;
-        let middleOfRow = crayonsInRow * width / 2;
-        let positionInRow = (Array.from(curRow.children).indexOf(currentCrayon) + 1) * width;
-        let xTranslation = middleOfRow - positionInRow + width / 2 - (height*.2*.5)/2; //move the difference from between the middle of the row and current position in the row, plus half the width of the crayon container, minus half the 'invisible' part of the point (which is itself half the point div - so 1/4 the point div)
-        currentCrayon.style.transform = 'translateY(-' + (20+height/2+.05*vwPrtHtPx*curRowNum+8*curRowNum) + 'px) translateX(' + (xTranslation) + 'px) rotateZ(-90deg)';
-        currentCrayon.style.margin
-        previousCrayon = currentCrayon;
-        for (let colorId in crayonColors) {
-          let selectedColorArray = selectedColor.substring(4, selectedColor.length - 1).split(',')
-          let selectedColorFormatted = RGBToHex(selectedColorArray[0], selectedColorArray[1], selectedColorArray[2]);
-          if (crayonColors[colorId] === selectedColorFormatted) {
-            colorName.textContent = colorId;
-            colorName.style.color = selectedColor;
-            colorName.style.textShadow = '3px 3px 5px #000, -1px 1px 1px #444, 1px -1px 1px #444,-1px -1px 1px #444';
-          }
-        }
-      })
-    })
-  }
-})
-
-//clear board event listener
-document.getElementById('clear-board').addEventListener('click', () => {
-  let confirmation = window.confirm('Are you sure?')
-  if (confirmation) {
-    let gridCells = document.querySelectorAll('.grid-cell');
-    let i = 0;
-    gridCells.forEach(element => {
-      setTimeout(() => element.style.backgroundColor = defaultColor, i * 2)
-      i++
-    })
-  }
-  clickHistory = [];
-  let undoBtn = document.getElementById('undo');
-        undoBtn.disabled = false;
-        undoBtn.classList.remove('disabled');
-})
-
-//new board event listener
-document.getElementById('new-board').addEventListener('click', () => {
-  let gridSize = window.prompt('Grid size please (between 1 and 60)');
-  if (gridSize === null) { return }
-  gridSize = parseInt(gridSize);
-  while (isNaN(gridSize) || gridSize > 60 || gridSize < 1) {
-    gridSize = window.prompt('Please input a number between 1 and 60');
-    if (gridSize === null) { return }
-    gridSize = parseInt(gridSize);
-  }
-  clickHistory = [];
-  let undoBtn = document.getElementById('undo');
-        undoBtn.disabled = true;
-        undoBtn.classList.add('disabled');
-  buildGrid(gridSize)
-})
-
-//clear cell event listener
-document.getElementById('clear-cell').addEventListener('click', () => {
-  if (currentCrayon !== undefined) {
-    currentCrayon.style.transform = '';
-    colorName.style.color = '#333333';
-    colorName.textContent = 'Currently Using Eraser - Select A Color To Draw';
-    selectedColor = defaultColor;
-  }
-  else {
-    selectedColor = defaultColor;
-    colorName.textContent = 'Currently Using Eraser - Select A Color To Draw'
-  }
-})
-
-//undo button event listener
-let clickCounter = 0;
-document.getElementById('undo').addEventListener('click', event => {
-  let cellId = Object.keys(clickHistory[clickHistory.length - 1])[0];
-  let priorColor = clickHistory[clickHistory.length - 1][cellId];
-  document.getElementById(cellId).style.backgroundColor = priorColor;
-  clickHistory.pop();
-  if (clickHistory.length === 0) {
-    event.target.disabled = true; event.target.classList.add('disabled')
-  }
-})
-
-
-//shuffle event listener
-document.getElementById('shuffle').addEventListener('click', () => {
-  let confirmation = window.confirm('Are you sure?  This cannot be undone.')
-  if (confirmation) {
-    let gridCells = document.querySelectorAll('.grid-cell');
-    let gridCellColors = [];
-    let randomizedBgColorArray = []
-    for (let gridCell of gridCells) {
-      gridCellColors.push(gridCell.style.backgroundColor)
-    }
-    for (let i = gridCellColors.length; i > 0; i--) {
-      let index = Math.floor(Math.random() * i);
-      let color = gridCellColors.splice(index, 1);
-      randomizedBgColorArray.push(color);
-    }
-    for (let i = 0; i < randomizedBgColorArray.length; i++) {
-      gridCells[i].style.backgroundColor = randomizedBgColorArray[i]
-    }
-  }
-  clickHistory = [];
-  let undoBtn = document.getElementById('undo');
-        undoBtn.disabled = true;
-        undoBtn.classList.add('disabled');
-})
-
-//save event listener
-let savedGames = {};
-document.getElementById('save').addEventListener('click', () => {
-  let name = window.prompt('Please input a name')
-  let savedGameNames = Object.keys(savedGames);
-  while (savedGameNames.includes(name)) {
-    name = window.prompt('That name is already in use, Please input a name')
-  }
-  savedGames[name] = {};
-  let gridCells = document.querySelectorAll('.grid-cell');
-  for (let gridCell of gridCells) {
-    let cellID = gridCell.id;
-    let cellBgColor = gridCell.style.backgroundColor;
-    savedGames[name][cellID] = cellBgColor;
-  }
-  console.log(savedGames)
-  let savedGameListItem = document.createElement('li');
-  savedGameListItem.textContent = name;
-  savedGameListItem.id = name;
-  document.getElementById('saved-games-list').appendChild(savedGameListItem);
-   let loadBtn = document.getElementById('load');
-  loadBtn.disabled = false;
-  loadBtn.classList.remove('disabled');
-})
-
-//load event listener
-document.getElementById('load').addEventListener('click', () => {
-  document.getElementById('saved-games-list-container').style.display = 'flex';
-  let savedGamesList = document.querySelectorAll('#saved-games-list li');
-  savedGamesList.forEach(savedGame => {
-    savedGame.addEventListener('click', () => {
-      let savedGameBoard = savedGames[savedGame.id];
-      let dimensions = Math.sqrt(Object.keys(savedGameBoard).length)
-      buildGrid(dimensions, savedGameBoard)
-      document.getElementById('saved-games-list-container').style.display = 'none';
-    })
-  })
-  clickHistory = [];
-  let undoBtn = document.getElementById('undo');
-  undoBtn.disabled = true;
-  undoBtn.classList.add('disabled');
-})
-
-//close load screen
-document.querySelector('button.close-button').addEventListener('click', () => {
-  document.getElementById('saved-games-list-container').style.display = 'none';
-})
-
