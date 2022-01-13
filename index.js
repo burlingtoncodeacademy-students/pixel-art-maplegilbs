@@ -217,7 +217,7 @@ clearBoardBtn.addEventListener('click', clearBoard);
 newBoardBtn.addEventListener('click', newBoard);
 clearCellBtn.addEventListener('click', clearCell);
 undoBtn.addEventListener('click', undo);
-shuffleBtn.addEventListener('click', shuffle); 
+shuffleBtn.addEventListener('click', shuffle);
 saveBtn.addEventListener('click', saveGame);
 loadBtn.addEventListener('click', loadGame);
 
@@ -225,17 +225,17 @@ loadBtn.addEventListener('click', loadGame);
 
 
 /*Event Handlers*/
-function setGridOptions () {
+function setGridOptions() {
   numGridCells = parseInt(gridOptions.value);
   document.getElementById('how-ambitious-label').textContent = howAmbitiousOpts[numGridCells]
 }
 
- function setColorOptions() {
+function setColorOptions() {
   numCrayons = parseInt(crayonOptions.value);
   document.getElementById('how-good-label').textContent = howGoodOpts[numCrayons]
 }
 
-function clearBoard () {
+function clearBoard() {
   let confirmation = window.confirm('Are you sure?')
   if (confirmation) {
     let gridCells = document.querySelectorAll('.grid-cell');
@@ -248,7 +248,7 @@ function clearBoard () {
   undoReset();
 }
 
-  function newBoard () {
+function newBoard() {
   let gridSize = window.prompt('Grid size please (between 1 and 60)');
   if (gridSize === null) { return }
   gridSize = parseInt(gridSize);
@@ -261,7 +261,7 @@ function clearBoard () {
   buildGrid(gridSize)
 }
 
-function clearCell () {
+function clearCell() {
   if (currentCrayon !== undefined) {
     currentCrayon.style.transform = '';
     colorName.style.color = '#333333';
@@ -284,7 +284,7 @@ function undo(event) {
   }
 }
 
-function shuffle () {
+function shuffle() {
   let confirmation = window.confirm('Are you sure?  This cannot be undone.')
   if (confirmation) {
     let gridCells = document.querySelectorAll('.grid-cell');
@@ -305,19 +305,40 @@ function shuffle () {
   undoReset()
 }
 
-function saveGame () {
-  let name = window.prompt('Please input a name')
-  let savedGameNames = Object.keys(savedGames);
-  while (savedGameNames.includes(name)) {
+
+
+/*----------------------------------Debug issue here-----------------------------------*/
+/*----------------------------------------------------------------------------------------*/
+
+//Note variable savedGames has been declared as a global variable set to an empty object
+//This function is used as the callback function for a click event on the "Save Game" button and is only called via that event
+function saveGame() {
+  let name = window.prompt('Please input a name')  // get a name from user to title the game
+  let savedGameNames = Object.keys(savedGames); // get a list of all names of saved games
+  while (savedGameNames.includes(name)) { //confirm the saved name has not already been used
     name = window.prompt('That name is already in use, Please input a name')
   }
-  savedGames[name] = {};
-  let gridCells = document.querySelectorAll('.grid-cell');
-  for (let gridCell of gridCells) {
-    let cellID = gridCell.id;
-    let cellBgColor = gridCell.style.backgroundColor;
-    savedGames[name][cellID] = cellBgColor;
+ 
+  console.log(savedGames) // the first save I would expect this to be empty.  It is not?
+
+  //let gridCells = document.getElementsByClassName('grid-cell');  //get the node list of elements with class .grid-cell - using the getElementsByClassName which I believe to be a live list
+  let gridCells = document.querySelectorAll('.grid-cell');  //get the node list of elements with class .grid-cell - using the querySelectorAll which I believe to be a static list
+  savedGames[name] = gridCells; // assign that list to the savedGames object under the key of the associated saved name as assigned on line 316
+
+  Object.keys(savedGames).forEach(savedGameName => { //for a quick check compare the first grid cell of every saved game.  The issue being experieinced; they all share the same value of the most recently saved game
+    console.log(`Saved game name: ${savedGameName}`)
+    console.log(savedGames[savedGameName][0])
+  })
+  
+  for (let i = 0; i < Object.keys(savedGames).length; i++) {  //When using the querySelectorall method, games are not identical, when using the getElementsByClassName games are identical
+    if (i != 0) {
+      if (savedGames[Object.keys(savedGames)[i]] === savedGames[Object.keys(savedGames)[i-1]]) {
+        console.log(`${Object.keys(savedGames)[i]} is a match to ${Object.keys(savedGames)[i-1]}` ) 
+      }
+    }
   }
+  
+ 
   let savedGameListItem = document.createElement('li');
   savedGameListItem.textContent = name;
   savedGameListItem.id = name;
@@ -326,21 +347,34 @@ function saveGame () {
   loadBtn.classList.remove('disabled');
 }
 
-function loadGame () {
+
+
+
+
+
+
+
+
+function loadGame() {
   document.getElementById('saved-games-list-container').style.display = 'flex';
   let savedGamesList = document.querySelectorAll('#saved-games-list li');
   savedGamesList.forEach(savedGame => {
     savedGame.addEventListener('click', () => {
       let savedGameBoard = savedGames[savedGame.id];
-      let dimensions = Math.sqrt(Object.keys(savedGameBoard).length)
-      buildGrid(dimensions, savedGameBoard)
+     
+      let gameBoard = document.querySelector('.game-board');
+      while (gameBoard.hasChildNodes()) {
+        gameBoard.removeChild(gameBoard.firstChild)
+      }
+      savedGameBoard.forEach(gridCell => { gameBoard.appendChild(gridCell) });
+
       document.getElementById('saved-games-list-container').style.display = 'none';
     })
   })
   undoReset()
 }
 
-function startGame () {
+function startGame() {
   if (numCrayons === null || numGridCells === null) {
     alert('Please indicate motivation and virtue levels.')
   }
